@@ -6,6 +6,8 @@
   Root dir can be set with 'bake set'.
 DESC
 
+readonly bake_file=$HOME/.bake
+
 prompt_echo()
 {
   local options
@@ -23,8 +25,6 @@ prompt_echo()
 
 read_bake_file()
 {
-
-  bake_file=$HOME/.bake
 
   if [ -s $bake_file ]; then
     . $bake_file 2>/dev/null

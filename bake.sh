@@ -26,7 +26,7 @@ prompt_echo ()
   echo $options $(basename $0): $args
 }
 
-read_bake_file ()
+read_config_file ()
 {
   if [ -s $bake_file ]; then
     . $bake_file 2>/dev/null
@@ -51,6 +51,26 @@ read_bake_file ()
   fi
 }
 
+create_backup ()
+{
+    [ -z $root_dir ] && root_dir=$(pwd)
+    [ $root_dir != $(pwd) ] && cd ${root_dir}
+    cd ..
+    file_name=$(echo $root_dir | tr / _ | cut -c 2-).$(date +%s).tar.gz
+    if [ -z $1 ]; then
+      dir=/tmp
+    else
+      dir=$(dirname $1)/$(basename $1)
+    fi
+    bak_file=${dir}/$file_name
+    # '--checkpoint=.500' - show progress
+    tar -zc --totals --checkpoint=.500 $(basename $root_dir) > $bak_file
+    if [ $? -eq 0 ]; then  
+      prompt_echo "file created: $bak_file"
+      exit 0
+    fi
+}
+
 if [ $# -gt 1 ]; then
   prompt_echo 'bake [set|unset|what]'
   exit 1
@@ -60,18 +80,8 @@ read_bake_file
 
 case "$1" in
   '')
-    [ -z $root_dir ] && root_dir=$(pwd)
-    [ $root_dir != $(pwd) ] && cd ${root_dir}
-    cd ..
-    bak_file=/tmp/$(echo $root_dir | tr / _ | cut -c 2-).$(date +%s).tar.gz
-    # '--checkpoint=.500' - show progress
-    tar -zc --totals --checkpoint=.500 $(basename $root_dir) > $bak_file
-    if [ $? -eq 0 ]; then  
-      prompt_echo "file created: $bak_file"
-      exit 0
-    else
-      exit 1
-    fi
+    create_backup
+    exit 1
     ;;
   set)
     root_dir=$(pwd)
@@ -87,6 +97,18 @@ case "$1" in
     ;;
   what)
     prompt_echo "root_dir=$root_dir" && exit 0
+    exit 1
+    ;;
+  where)
+    while :; do
+      echo -n '(q|Q for quit): '
+      read dir
+      if [ $dir = q ] || [ $dir = Q ]; then
+        exit 0
+      elif [ -d $dir ]; then
+        create_backup $dir
+      fi
+    done
     exit 1
     ;;
   *)

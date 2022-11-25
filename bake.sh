@@ -6,37 +6,22 @@
   Root dir can be set with 'bake set'.
 DESC
 
-# TODO: 'bake where': read a dir and writes to that dir once
 # TODO: 'bake n': 'n' is interval in minutes for creating backups
 
 readonly bake_file=$HOME/.bake
 
-prompt_echo ()
-{
-  local options
-  local args
-  for arg in $@
-  do
-    if [ $(echo $arg | cut -c 1-1) = - ]; then
-      options="${options} ${arg}"
-    else
-      args="${args} ${arg}"
-    fi
-  done
-  echo $options $(basename $0): $args
-}
-
-read_config_file ()
+read_bake_file ()
 {
   if [ -s $bake_file ]; then
     . $bake_file 2>/dev/null
     if [ ! $? -eq 0 ] || [ ! -d $root_dir ]; then
-      while true; do
-        prompt_echo -n "file '$bake_file' is not readable; fix it [y/N]? "
+      while true
+      do
+        printf 'file %s not readable; fix it [y/N]? ' "$bake_file"
         read erase
         case "$erase" in
           Y|y)
-            echo 'root_dir=' > $bake_file
+            printf 'root_dir=' > $bake_file
             break
             ;;
           N|n|'')
@@ -46,33 +31,33 @@ read_config_file ()
       done
     fi
   else
-    echo 'root_dir=' > $bake_file
+    printf 'root_dir=' > $bake_file
     . $bake_file 2>/dev/null
   fi
 }
 
 create_backup ()
 {
-    [ -z $root_dir ] && root_dir=$(pwd)
-    [ $root_dir != $(pwd) ] && cd ${root_dir}
-    cd ..
-    file_name=$(echo $root_dir | tr / _ | cut -c 2-).$(date +%s).tar.gz
-    if [ -z $1 ]; then
-      dir=/tmp
-    else
-      dir=$(dirname $1)/$(basename $1)
-    fi
-    bak_file=${dir}/$file_name
-    # '--checkpoint=.500' - show progress
-    tar -zc --totals --checkpoint=.500 $(basename $root_dir) > $bak_file
-    if [ $? -eq 0 ]; then  
-      prompt_echo "file created: $bak_file"
-      exit 0
-    fi
+  [ -z $root_dir ] && root_dir=$(pwd)
+  [ $root_dir != $(pwd) ] && cd ${root_dir}
+  cd ..
+  file_name=$(printf '%s' "$root_dir" | tr / _ | cut -c 2-).$(date +%s).tar.gz
+  if [ -z $1 ]; then
+    dir=/tmp
+  else
+    dir=$(dirname $1)/$(basename $1)
+  fi
+  bak_file=${dir}/$file_name
+  # '--checkpoint=.500' - show progress
+  tar -zc --totals --checkpoint=.500 $(basename $root_dir) > $bak_file
+  if [ $? -eq 0 ]; then  
+    printf 'bake: file created: %s\n' "$bak_file"
+    exit 0
+  fi
 }
 
 if [ $# -gt 1 ]; then
-  prompt_echo 'bake [set|unset|what]'
+  printf 'bake [set|unset|what]\n'
   exit 1
 fi
 
@@ -86,22 +71,23 @@ case "$1" in
   set)
     root_dir=$(pwd)
     sed -i "s|\(root_dir=\)\(.*\)|\1${root_dir}|" $bake_file || exit 1
-    prompt_echo "root_dir=$root_dir" && exit 0
+    printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   unset)
     sed -i "s/\(root_dir=\)\(.*\)/\1/" $bake_file || exit 1
     read_bake_file
-    prompt_echo "root_dir=$root_dir" && exit 0
+    printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   what)
-    prompt_echo "root_dir=$root_dir" && exit 0
+    printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   where)
-    while :; do
-      echo -n '(q|Q for quit): '
+    while :
+    do
+      printf '(q|Q for quit): '
       read dir
       if [ $dir = q ] || [ $dir = Q ]; then
         exit 0
@@ -112,6 +98,6 @@ case "$1" in
     exit 1
     ;;
   *)
-    prompt_echo 'bake [set|unset|what]'
+    printf 'bake [set|unset|what]\n'
     exit 1
 esac

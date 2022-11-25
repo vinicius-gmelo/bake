@@ -21,7 +21,7 @@ read_bake_file ()
         read erase
         case "$erase" in
           Y|y)
-            printf 'root_dir=' > $bake_file
+            echo 'root_dir=' > $bake_file
             break
             ;;
           N|n|'')
@@ -31,7 +31,7 @@ read_bake_file ()
       done
     fi
   else
-    printf 'root_dir=' > $bake_file
+    echo 'root_dir=' > $bake_file
     . $bake_file 2>/dev/null
   fi
 }
@@ -41,7 +41,7 @@ create_backup ()
   [ -z $root_dir ] && root_dir=$(pwd)
   [ $root_dir != $(pwd) ] && cd ${root_dir}
   cd ..
-  file_name=$(printf '%s' "$root_dir" | tr / _ | cut -c 2-).$(date +%s).tar.gz
+  file_name=$(echo "$root_dir" | tr / _ | cut -c 2-).$(date +%s).tar.gz
   if [ -z $1 ]; then
     dir=/tmp
   else

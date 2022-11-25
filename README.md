@@ -8,4 +8,5 @@ $ bake set # seta o root dir
 $ bake unset
 $ bake what # mostra o diretório em que o backup será executado; root dir ou atual
 $ bake # gera o backup
+$ bake where # gera o backup no diretório especificado pelo usuário
 ```

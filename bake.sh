@@ -10,6 +10,16 @@ DESC
 
 readonly bake_file=$HOME/.bake
 
+create_bake_file ()
+{
+  cat << EOF > $bake_file
+# bake configuration file
+# see 'bake help' for info
+
+root_dir=
+EOF
+}
+
 read_bake_file ()
 {
   if [ -s $bake_file ]; then
@@ -31,7 +41,7 @@ read_bake_file ()
       done
     fi
   else
-    echo 'root_dir=' > $bake_file
+    create_bake_file
     . $bake_file 2>/dev/null
   fi
 }
@@ -97,7 +107,15 @@ case "$1" in
     done
     exit 1
     ;;
-  *)
-    printf 'bake [set|unset|what]\n'
-    exit 1
+  help)
+    cat << EOF
+usage: bake [set|unset|what|where]
+
+'bake' creates backups on Linux (POSIX compliant, may work with Mac), on /tmp by default - you can save the backup to another dir, using 'bake where' - and with .tar.gz format/compression. You can set the root dir for the backup with 'bake set', that stores the current dir using a '.bake' file created on user's \$HOME.
+EOF
+exit 0
+;;
+*)
+  printf 'bake [set|unset|what|where]\n'
+  exit 1
 esac

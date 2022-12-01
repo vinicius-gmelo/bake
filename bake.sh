@@ -4,7 +4,7 @@ readonly bake_file="${HOME}/.bake"
 
 create_bake_file ()
 {
-  cat << EOF > $bake_file
+  cat << 'EOF' > "$bake_file"
 # bake configuration file
 # see 'bake help' for info
 
@@ -14,16 +14,16 @@ EOF
 
 read_bake_file ()
 {
-  if [ -s $bake_file ]; then
-    . "$bake_file" 2>/dev/null
-    if [ ! $? -eq 0 ] || [ ! -d $root_dir ]; then
+  if [ -s "$bake_file" ]; then
+    if ! . "$bake_file"; then
       while true
       do
         printf 'file %s not readable; fix it [y/N]? ' "$bake_file"
         read erase
         case "$erase" in
           Y|y|YY|yy)
-            echo 'root_dir=' > "$bake_file"
+            create_bake_file
+            . $bake_file
             break
             ;;
           N|n|NN|nn|'')
@@ -34,16 +34,17 @@ read_bake_file ()
     fi
   else
     create_bake_file
-    . "$bake_file" 2>/dev/null
+    . $bake_file
   fi
 }
 
 create_backup ()
 {
+  read_bake_file
   [ -z "$root_dir" ] && root_dir="$(pwd)"
   [ "$root_dir" != "$(pwd)" ] && cd "${root_dir}"
   cd ..
-  file_name="$(echo "$root_dir" | tr / _ | cut -c 2-)"."$(date +%s)".tar.gz
+  file_name="$(echo $root_dir | tr / _ | cut -c 2-)"."$(date +%s)".tar.gz
   if [ -z "$1" ]; then
     dir='/tmp'
   else
@@ -61,26 +62,25 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
-read_bake_file
-
 case "$1" in
   '')
     create_backup
     exit 1
     ;;
   set)
-    root_dir=$(pwd)
-    sed -i "s\(root_dir=\)\(.*\)\1${root_dir}" "$bake_file" 
+    root_dir="$(pwd)"
+    sed -i "s|\(root_dir=\)\(.*\)|\1${root_dir}|" "$bake_file" || exit 1
     printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   unset)
-    sed -i "s/\(root_dir=\)\(.*\)/\1/" $bake_file 
+    sed -i "s/\(root_dir=\)\(.*\)/\1/" "$bake_file" || exit 1
     read_bake_file
     printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   what)
+    read_bake_file
     printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
@@ -89,10 +89,11 @@ case "$1" in
     do
       printf '(q|Q for quit): '
       read dir
-      if [ $dir = q ] || [ $dir = Q ]; then
-        exit 0
-      elif [ -d $dir ]; then
-        create_backup $dir
+      if [ "$dir" = 'q' ] || [ "$dir" = 'Q' ]; then
+        exit 1
+      elif [ -d "$dir" ]; then
+        create_backup "$dir"
+        exit 1
       fi
     done
     exit 1

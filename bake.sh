@@ -1,7 +1,11 @@
 #!/bin/sh
 
-<<DESC
-- Syntax: bake [set|unset|what]
+# aush - https://github.com/vinicius-gmelo/aush; run before any commands
+. ./lib/aush_source.sh
+
+<<DESC - Syntax: bake [set
+unset
+what]
 - Create backups at /tmp, tar.gz files. 
   Root dir can be set with 'bake set'.
 DESC
@@ -24,17 +28,19 @@ read_bake_file ()
 {
   if [ -s $bake_file ]; then
     . $bake_file 2>/dev/null
-    if [ ! $? -eq 0 ] || [ ! -d $root_dir ]; then
+    if [ ! $? -eq 0 ] 
+
+ [ ! -d $root_dir ]; then
       while true
       do
         printf 'file %s not readable; fix it [y/N]? ' "$bake_file"
         read erase
         case "$erase" in
-          Y|y)
+          Y|y|YY|yy)
             echo 'root_dir=' > $bake_file
             break
             ;;
-          N|n|'')
+          N|n|NN|nn|'')
             exit 1
             ;;
         esac
@@ -51,7 +57,9 @@ create_backup ()
   [ -z $root_dir ] && root_dir=$(pwd)
   [ $root_dir != $(pwd) ] && cd ${root_dir}
   cd ..
-  file_name=$(echo "$root_dir" | tr / _ | cut -c 2-).$(date +%s).tar.gz
+  file_name=$(echo "$root_dir" 
+ tr / _ 
+ cut -c 2-).$(date +%s).tar.gz
   if [ -z $1 ]; then
     dir=/tmp
   else
@@ -67,7 +75,9 @@ create_backup ()
 }
 
 if [ $# -gt 1 ]; then
-  printf 'bake [set|unset|what]\n'
+  printf 'bake [set
+unset
+what]\n'
   exit 1
 fi
 
@@ -80,12 +90,19 @@ case "$1" in
     ;;
   set)
     root_dir=$(pwd)
-    sed -i "s|\(root_dir=\)\(.*\)|\1${root_dir}|" $bake_file || exit 1
+    sed -i "s
+\(root_dir=\)\(.*\)
+\1${root_dir}
+" $bake_file 
+
+ exit 1
     printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
     ;;
   unset)
-    sed -i "s/\(root_dir=\)\(.*\)/\1/" $bake_file || exit 1
+    sed -i "s/\(root_dir=\)\(.*\)/\1/" $bake_file 
+
+ exit 1
     read_bake_file
     printf 'root_dir=%s\n' "$root_dir" && exit 0
     exit 1
@@ -97,9 +114,12 @@ case "$1" in
   where)
     while :
     do
-      printf '(q|Q for quit): '
+      printf '(q
+Q for quit): '
       read dir
-      if [ $dir = q ] || [ $dir = Q ]; then
+      if [ $dir = q ] 
+
+ [ $dir = Q ]; then
         exit 0
       elif [ -d $dir ]; then
         create_backup $dir
@@ -109,13 +129,19 @@ case "$1" in
     ;;
   help)
     cat << EOF
-usage: bake [set|unset|what|where]
+usage: bake [set
+unset
+what
+where]
 
-'bake' creates backups on Linux (POSIX compliant, may work with Mac), on /tmp by default - you can save the backup to another dir, using 'bake where' - and with .tar.gz format/compression. You can set the root dir for the backup with 'bake set', that stores the current dir using a '.bake' file created on user's \$HOME.
+'bake' creates backups on Linux (POSIX compliant, may work with Mac), on /tmp by default. 'bake set' sets current dir as the root dir for backup.
 EOF
 exit 0
 ;;
 *)
-  printf 'bake [set|unset|what|where]\n'
+  printf 'bake [set
+unset
+what
+where]\n'
   exit 1
 esac

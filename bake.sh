@@ -18,19 +18,21 @@ read_bake_file ()
     if ! . "$bake_file"; then
       while true
       do
-        printf 'file %s not readable; fix it [y/N]? ' "$bake_file"
+        printf 'bake: file %s not readable; fix it [y/N]? ' "$bake_file"
         read erase
         case "$erase" in
           Y|y|YY|yy)
             create_bake_file
-            . $bake_file
-            break
+            exit 0
             ;;
           N|n|NN|nn|'')
             exit 1
             ;;
         esac
       done
+    elif [ ! -d "$root_dir" ] && [ "$root_dir" != '' ]; then
+      print 'bake: "%s" is not a dir' "$root_dir"
+      exit 1
     fi
   else
     create_bake_file
@@ -40,20 +42,28 @@ read_bake_file ()
 
 create_backup ()
 {
-  read_bake_file
+
+  local file_name bak_file dir
+
+  if [ "$1" != '' ] && [ ! -d "$1" ]; then
+   printf '"%s" is not a directory' "$1"
+  fi 
+
+  [ -z "$1" ] && dir='/tmp' || dir="$(dirname $1)"/"$(basename $1)"
+
   [ -z "$root_dir" ] && root_dir="$(pwd)"
   [ "$root_dir" != "$(pwd)" ] && cd "${root_dir}"
+
   cd ..
+
   file_name="$(echo $root_dir | tr / _ | cut -c 2-)"."$(date +%s)".tar.gz
-  if [ -z "$1" ]; then
-    dir='/tmp'
-  else
-    dir="$(dirname $1)"/"$(basename $1)"
-  fi
   bak_file="${dir}/$file_name"
+
   if tar -zc --totals --checkpoint=.500 "$(basename $root_dir)" > "$bak_file"; then
     printf 'bake: file created: %s\n' "$bak_file"
     exit 0
+  else
+    exit 1
   fi
 }
 
@@ -89,9 +99,10 @@ case "$1" in
     do
       printf '(q|Q for quit): '
       read dir
-      if [ "$dir" = 'q' ] || [ "$dir" = 'Q' ]; then
+      if [ "$dir" = 'q' ] || [ "$dir" = 'Q' ] || [ ! -d "$dir" ]; then
         exit 1
-      elif [ -d "$dir" ]; then
+      else
+        read_bake_file
         create_backup "$dir"
         exit 1
       fi
